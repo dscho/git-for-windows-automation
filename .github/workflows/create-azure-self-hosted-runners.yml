@@ -49,6 +49,8 @@ jobs:
     - name: Create matrix for setting up runners in parallel
       id: create-matrix
       run: |
+        env
+        exit 123
         AMOUNT_OF_RUNNERS="${{ inputs.amount_of_runners }}"
         echo "Going to create $AMOUNT_OF_RUNNERS runners"
         MATRIX="matrix={\"runner_index\":[$(seq -s "," 1 $AMOUNT_OF_RUNNERS)]}"
