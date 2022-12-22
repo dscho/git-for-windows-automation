@@ -19,12 +19,12 @@ on:
         type: string
         required: true
         description: Organization or personal account to deploy the runner to
-        default: ${{ github.repository_owner }}
+        default: github.repository_owner
       runner_repo:
         type: string
         required: false
         description: Repo to deploy the runner to. Only needed if runner_scope is set to "repo-level"
-        default: ${{ github.event.repository.name }}
+        default: github.event.repository.name
 
 env:
   ACTIONS_RUNNER_ORG: "${{ github.event.inputs.runner_org }}"
