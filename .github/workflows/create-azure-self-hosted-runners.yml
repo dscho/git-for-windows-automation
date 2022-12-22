@@ -6,6 +6,7 @@ on:
       amount_of_runners:
         description: 'Amount of runners to set up'
         required: true
+        default: 1
       runner_scope:
         type: choice
         required: true
@@ -13,14 +14,17 @@ on:
         options:
         - org-level
         - repo-level
+        default: repo-level
       runner_org:
         type: string
         required: true
         description: Organization or personal account to deploy the runner to
+        default: ${{ github.repository_owner }}
       runner_repo:
         type: string
         required: false
         description: Repo to deploy the runner to. Only needed if runner_scope is set to "repo-level"
+        default: ${{ github.event.repository.name }}
 
 env:
   ACTIONS_RUNNER_ORG: "${{ github.event.inputs.runner_org }}"
