@@ -1,0 +1,74 @@
+name: Release Git for Windows
+
+on:
+  workflow_dispatch:
+    inputs:
+      git_artifacts_i686_workflow_run_id:
+        description: 'ID of the git-artifacts (i686) workflow run'
+        required: true
+      git_artifacts_x86_64_workflow_run_id:
+        description: 'ID of the git-artifacts (x86_64) workflow run'
+        required: true
+
+env:
+  HOME: "${{github.workspace}}\\home"
+  USERPROFILE: "${{github.workspace}}\\home"
+  OWNER: git-for-windows
+  REPO: git
+  I686_WORKFLOW_RUN_ID: "${{github.event.inputs.git_artifacts_i686_workflow_run_id}}"
+  X86_64_WORKFLOW_RUN_ID: "${{github.event.inputs.git_artifacts_x86_64_workflow_run_id}}"
+
+jobs:
+  github-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: GitHub Release
+        uses: git-for-windows/git-for-windows-automation/.github/actions/github-release@release
+        with:
+          app-id: ${{ secrets.GH_APP_ID }}
+          private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+          git_artifacts_i686_workflow_run_id: ${{ env.I686_WORKFLOW_RUN_ID }}
+          git_artifacts_x86_64_workflow_run_id: ${{ env.X86_64_WORKFLOW_RUN_ID }}
+  announcement-mail:
+    runs-on: ubuntu-latest
+    needs: ['github-release']
+    steps:
+      - name: Mail announcement
+        uses: git-for-windows/git-for-windows-automation/.github/actions/mail-announcement@release
+        with:
+          send.announcement.email.base64: ${{ secrets.SEND_ANNOUNCEMENT_EMAIL_BASE64 }}
+# TODO: use SMTP_SERVER, SMTP_EMAIL and SMTP_PASSWORD instead?
+  gitforwindows.org:
+    runs-on: ubuntu-latest
+    needs: ['github-release']
+    steps:
+      - name: https://gitforwindows.org
+        uses: git-for-windows/git-for-windows-automation/.github/actions/update-website@release
+        with:
+          app-id: ${{ secrets.GH_APP_ID }}
+          private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+  repository-updates:
+    runs-on: ubuntu-latest
+    needs: ['github-release']
+    steps:
+      - name: Git repository updates (build-extra, MINGW-packages)
+        uses: git-for-windows/git-for-windows-automation/.github/actions/repository-updates@release
+        with:
+          app-id: ${{ secrets.GH_APP_ID }}
+          private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+  pacman-packages:
+    runs-on: windows-latest
+    steps:
+      - name: Pacman packages
+        uses: git-for-windows/git-for-windows-automation/.github/actions/pacman-packages@release
+        with:
+          blobs-azure-token: ${{ secrets.BLOBS_AZURE_TOKEN }}
+          GPGKEY: ${{secrets.GPGKEY}}
+  nuget-packages:
+    runs-on: windows-latest
+    steps:
+      - name: NuGet packages
+        uses: git-for-windows/git-for-windows-automation/.github/actions/nuget-packages@release
+        with:
+          nuget-api-key: ${{ secrets.NUGET_API_KEY }}
+          nuget-config: ${{ secrets.NUGET_CONFIG }}
