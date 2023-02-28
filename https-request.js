@@ -21,7 +21,7 @@ module.exports = async (context, hostname, method, requestPath, body, headers) =
     return new Promise((resolve, reject) => {
         try {
             const https = require('https')
-            const req = https.request(options, res => {
+            const handler = res => {
                 if (res.statusCode === 204) {
                     resolve({
                         statusCode: res.statusCode,
@@ -54,7 +54,27 @@ module.exports = async (context, hostname, method, requestPath, body, headers) =
                         reject(`Invalid JSON: ${json}`)
                     }
                 })
+            }
+
+            const req = https.request(options, res => {
+                if (res.statusCode === 301 || res.statusCode === 302) {
+                    const url = res.headers.location
+                    const match = url.match(/^https:\/\/([^/]+)(.*)$/)
+                    if (!match) throw new Error(`Unsupported redirect URL: ${url}`)
+
+                    const options = {
+                        port: 443,
+                        hostname: match[1],
+                        method: 'GET',
+                        path: match[2],
+                        headers
+                    }
+                    const req = https.request(options, handler)
+                    req.on('error', err => reject(err))
+                    req.end()
+                } else handler(res)
             })
+
             req.on('error', err => reject(err))
             if (body) req.write(body)
             req.end()
