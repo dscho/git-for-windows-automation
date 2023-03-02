@@ -1,0 +1,113 @@
+name: 'Upload Git artifacts to a new GitHub Release'
+description: 'Creates a new GitHub Release in git-for-windows/git and uploads previously generated Git artifacts.'
+inputs:
+  app-id:
+    description: 'The GitHub App ID'
+    required: true
+  private-key:
+    description: 'The private key of the GitHub App'
+    required: true
+  owner:
+    description: 'The owner of the target repository'
+    required: true
+    default: 'git-for-windows'
+  repo:
+    description: 'The name of the target repository'
+    required: true
+  rev:
+    description: 'The target commit'
+    required: true
+  git_artifacts_i686_workflow_run_id:
+    description: 'ID of the git-artifacts (i686) workflow run'
+    required: true
+  git_artifacts_x86_64_workflow_run_id:
+    description: 'ID of the git-artifacts (x86_64) workflow run'
+    required: true
+outputs:
+  github-release-url:
+    description: "The GitHub Release URL"
+    value: ${{ steps.release.outputs.url }}
+runs:
+  using: "composite"
+  env:
+    APP_ID: ${{ inputs.app-id }}
+    PRIVATE_KEY: ${{ inputs.private-key }}
+    OWNER: ${{ inputs.owner }}
+    REPO: ${{ inputs.repo }}
+    REV: ${{ inputs.rev }}
+    I686_WORKFLOW_RUN_ID: "${{ inputs.git_artifacts_i686_workflow_run_id }}"
+    X86_64_WORKFLOW_RUN_ID: "${{ inputs.git_artifacts_x86_64_workflow_run_id }}"
+  steps:
+    - uses: actions/checkout@v3
+    - name: Mirror Check Run to ${{ env.OWNER }}/${{ env.REPO }}
+      uses: ./.github/actions/check-run-action
+      with:
+        app-id: ${{ env.APP_ID }}
+        private-key: ${{ env.PRIVATE_KEY }}
+        owner: ${{ env.OWNER }}
+        repo: ${{ env.REPO }}
+        rev: ${{ env.REV }}
+        check-run-name: "github-release"
+        title: "Publish a GitHub Release for @${{ env.REV }}"
+        summary: "Downloading the Git artifacts from ${{ env.I686_WORKFLOW_RUN_ID }} and ${{ env.X86_64_WORKFLOW_RUN_ID }} and publishing them as a new GitHub Release at ${{ env.OWNER }}/${{ env.REPO }}"
+        text: "For details, see [this run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id}})."
+        details-url: "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id}}"
+    - name: create release and upload release assets
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const { initCheckRunState } = require('./check-runs')
+          const state = await initCheckRunState(
+            console,
+            core,
+            process.env.APP_ID || undefined,
+            process.env.PRIVATE_KEY || undefined,
+            process.env.OWNER || undefined,
+            process.env.REPO || undefined)
+          await state.refreshToken()
+
+          set -x
+          version=$(cat artifacts/bundle-artifacts/next_version)
+          ver=$(cat artifacts/bundle-artifacts/ver)
+          name="Git for Windows $(cat artifacts/bundle-artifacts/display_version)"
+          quoted="$(cat artifacts/notes/release-notes-$ver |
+              sed -e ':1;${s/[\\"]/\\&/g;s/\n/\\n/g};N;b1')"
+
+          build-extra/upload-to-github.sh \
+              --gentle --repo=git "$version" \
+              artifacts/installer-x86_64/Git-"$ver"-64-bit.exe \
+              artifacts/installer-i686/Git-"$ver"-32-bit.exe \
+              artifacts/portable-x86_64/PortableGit-"$ver"-64-bit.7z.exe \
+              artifacts/portable-i686/PortableGit-"$ver"-32-bit.7z.exe \
+              artifacts/mingit-x86_64/MinGit-"$ver"-64-bit.zip \
+              artifacts/mingit-i686/MinGit-"$ver"-32-bit.zip \
+              artifacts/mingit-busybox-x86_64/MinGit-"$ver"-busybox-64-bit.zip \
+              artifacts/mingit-busybox-i686/MinGit-"$ver"-busybox-32-bit.zip \
+              artifacts/archive-x86_64/Git-"$ver"-64-bit.tar.bz2 \
+              artifacts/archive-i686/Git-"$ver"-32-bit.tar.bz2 \
+              artifacts/installer-x86_64/pdbs-for-git-64-bit-*.zip \
+              artifacts/installer-i686/pdbs-for-git-32-bit-*.zip &&
+
+          git clone https://github.com/git-for-windows/git &&
+          git -C git fetch --tags ../artifacts/bundle-artifacts/git.bundle $version &&
+          git -C git push origin $version &&
+
+          url=https://api.github.com/repos/git-for-windows/git/releases &&
+          id="$(curl --netrc -s $url |
+            sed -n '/^    "id":/{:1;N;/"tag_name": *"'"$version"'"/{
+              s/^ *"id": *\([0-9]*\).*/\1/p;q};b1}')" &&
+          test -n "$id" &&
+
+          case "$BUILD_BUILDNUMBER" in
+          *-rc*)
+            prerelease=true
+            ;;
+          *)
+            prerelease=false
+            ;;
+          esac &&
+
+          out="$(curl --netrc --show-error -s -XPATCH -d \
+            '{"name":"'"$name"'","body":"'"$quoted"'",
+            "draft":false,"prerelease":'$prerelease'}' \
+            $url/$id)"
