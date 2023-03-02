@@ -82,8 +82,8 @@ jobs:
           unzip bundle-artifacts.zip -d bundle-artifacts
           echo "GIT_VERSION=$(cat bundle-artifacts/next_version)" >> $GITHUB_ENV
           sed '1,/^$/d' <bundle-artifacts/git.bundle |
-          { git unpack-objects -r 2>/dev/null || true; } &&
-          tag_oid="$(git ls-remote bundle-artifacts/git.bundle $(cat bundle-artifacts/next_version) | cut -f 1)" &&
+          git unpack-objects -r 2>/dev/null
+          tag_oid="$(git ls-remote bundle-artifacts/git.bundle $(cat bundle-artifacts/next_version) | cut -f 1)"
           echo "GIT_REV=$(git rev-parse --verify "$tag_oid"^0)" >>$GITHUB_ENV
       - name: Mirror Check Run to ${{ env.OWNER }}/${{ env.REPO }}
         uses: ./.github/actions/check-run-action
