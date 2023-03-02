@@ -10,7 +10,30 @@ module.exports = async (context, hostname, method, requestPath, body, headers) =
         if (typeof body === 'object') body = JSON.stringify(body)
         headers['Content-Type'] = 'application/json'
         headers['Content-Length'] = body.length
+    } else if (headers['Content-Path']) {
+        const fs = require('fs')
+        const stat = fs.statSync(headers['Content-Path'])
+        headers['Content-Length'] = stat.size
+        if (!headers['Content-Type']) {
+            const [fileExtension] = headers['Content-Path'].match(/\.[^.]+$/)
+            headers['Content-Type'] = {
+                '.7z': 'application/zip',
+                '.bz2': 'application/x-bzip2',
+                '.deb': 'application/x-debian-package',
+                '.exe': 'application/executable',
+                '.gz': 'application/gzip',
+                '.js': 'application/javascript',
+                '.md': 'text/markdown',
+                '.png': 'image/png',
+                '.sh': 'text/x-shellscript',
+                '.svg': 'image/svg+xml',
+                '.txt': 'text/plain',
+                '.xz': 'application/x-xz',
+                '.zip': 'application/zip'
+            }[fileExtension] || 'application/octet-stream'
+        }
     }
+
     const options = {
         port: 443,
         hostname: hostname || 'api.github.com',
@@ -76,8 +99,15 @@ module.exports = async (context, hostname, method, requestPath, body, headers) =
             })
 
             req.on('error', err => reject(err))
-            if (body) req.write(body)
-            req.end()
+            if (body) {
+                req.write(body)
+                req.end()
+            } else if (headers['Content-Path']) {
+                const fs = require('fs')
+                fs.createReadStream(headers['Content-Path']).pipe(req)
+            } else {
+                req.end()
+            }
         } catch (e) {
             reject(e)
         }
