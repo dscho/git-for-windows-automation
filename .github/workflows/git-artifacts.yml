@@ -1,41 +1,20 @@
 name: git-artifacts
-run-name: Build git-artifacts (${{ inputs.architecture }})
+run-name: Build git-artifacts (x86_64)
 
 on:
-  workflow_dispatch:
-    inputs:
-      artifacts:
-        description: 'Optionally restrict what artifacts to build (portable, installer, etc.). Separate artifacts with spaces'
-        required: false
-      architecture:
-        type: choice
-        description: 'Architecture to build'
-        required: true
-        options: 
-        - x86_64
-        - i686
-        - aarch64
-      tag_git_workflow_run_id:
-        description: 'Workflow run ID of the tag-git pipeline'
-        required: false
-      existing_git_tag:
-        description: 'Existing tag to build from. Requires tag_git_workflow_run_id to be empty'
-        required: false
-      build_extra_rev_for_existing_git_tag:
-        description: 'build-extra revision to use if building from an existing Git tag. Required if existing_git_tag is non-empty'
-        required: false
+  push:
 
 env:
   GPG_OPTIONS: "--batch --yes --no-tty --list-options no-show-photos --verify-options no-show-photos --pinentry-mode loopback"
   HOME: "${{github.workspace}}\\home"
   USERPROFILE: "${{github.workspace}}\\home"
-  ARTIFACTS_TO_BUILD: "${{github.event.inputs.artifacts}}"
-  ARCHITECTURE: "${{github.event.inputs.architecture}}"
+  ARTIFACTS_TO_BUILD: ""
+  ARCHITECTURE: "x86_64"
   OWNER: git-for-windows
   REPO: git
-  TAG_GIT_WORKFLOW_RUN_ID: "${{github.event.inputs.tag_git_workflow_run_id}}"
-  EXISTING_GIT_TAG: "${{github.event.inputs.existing_git_tag}}"
-  BUILD_EXTRA_REV_FOR_EXISTING_GIT_TAG: "${{github.event.inputs.build_extra_rev_for_existing_git_tag}}"
+  TAG_GIT_WORKFLOW_RUN_ID: "4312008569"
+  EXISTING_GIT_TAG: ""
+  BUILD_EXTRA_REV_FOR_EXISTING_GIT_TAG: ""
 
 defaults:
   run:
@@ -43,7 +22,7 @@ defaults:
 
 jobs:
   pkg:
-    runs-on: ${{ github.event.inputs.architecture == 'aarch64' && fromJSON('["Windows", "ARM64"]') || 'windows-latest' }}
+    runs-on: windows-latest
     outputs:
       artifact_matrix: ${{steps.artifact-build-matrix.outputs.matrix}}
       msystem: ${{steps.configure-environment.outputs.MSYSTEM}}
@@ -322,7 +301,7 @@ jobs:
           append-text: "${{ format('Completed: {0}', job.status) }}."
           conclusion: ${{ job.status }}
   artifacts:
-    runs-on: ${{ github.event.inputs.architecture == 'aarch64' && fromJSON('["Windows", "ARM64"]') || 'windows-latest' }}
+    runs-on: windows-latest
     needs: pkg
     env:
       MSYSTEM: ${{ needs.pkg.outputs.msystem }}
