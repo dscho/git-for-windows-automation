@@ -3,6 +3,7 @@ run-name: Build git-artifacts (x86_64)
 
 on:
   push:
+  workflow_dispatch:
 
 env:
   GPG_OPTIONS: "--batch --yes --no-tty --list-options no-show-photos --verify-options no-show-photos --pinentry-mode loopback"
@@ -31,4 +32,4 @@ jobs:
       check-run-state: ${{steps.check-run-state.outputs.check-run-state}}
     steps:
       - name: clone git-for-windows-automation
-        uses: actions/checkout@v3.0.0
+        uses: dscho/checkout@main
