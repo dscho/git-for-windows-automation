@@ -31,4 +31,4 @@ jobs:
       check-run-state: ${{steps.check-run-state.outputs.check-run-state}}
     steps:
       - name: clone git-for-windows-automation
-        uses: actions/checkout@v3.2.0
+        uses: actions/checkout@v3.1.0
