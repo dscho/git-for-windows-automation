@@ -76,6 +76,7 @@ jobs:
       - name: Download bundle-artifacts zip
         if: env.TAG_GIT_WORKFLOW_RUN_ID != ''
         run: |
+          set -x &&
           mkdir bundle-artifacts
           curl -o bundle-artifacts.zip "${{steps.get-bundle-artifacts-url.outputs.download-url}}"
           unzip bundle-artifacts.zip -d bundle-artifacts
