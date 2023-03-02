@@ -1,16 +1,32 @@
 name: tag-git
-run-name: "Tag Git snapshot at git-for-windows/git@c8edb521bdabec14b07e9142e48cab77a40ba339"
+run-name: "Tag Git ${{ inputs.snapshot == 'true' && 'snapshot ' : '' }}at ${{ inputs.owner }}/${{ inputs.repo }}@${{ inputs.rev }}"
 
 on:
-  push:
+  workflow_dispatch:
+    inputs:
+      rev:
+        description: 'The commit to tag'
+        required: true
+      owner:
+        description: 'Optionally override from where to fetch the specified rev'
+        required: true
+        default: git-for-windows
+      repo:
+        description: 'Optionally override from where to fetch the specified rev'
+        required: true
+        default: git
+      snapshot:
+        description: 'A flag indicating whether this is a snapshot or a full Git for Windows release'
+        required: true
+        default: true
 
 env:
   GPG_OPTIONS: "--batch --yes --no-tty --list-options no-show-photos --verify-options no-show-photos --pinentry-mode loopback"
   HOME: "${{github.workspace}}/home"
-  OWNER: git-for-windows
-  REPO: git
-  REV: c8edb521bdabec14b07e9142e48cab77a40ba339
-  SNAPSHOT: false
+  OWNER: "${{github.event.inputs.owner}}"
+  REPO: "${{github.event.inputs.repo}}"
+  REV: "${{github.event.inputs.rev}}"
+  SNAPSHOT: "${{github.event.inputs.snapshot}}"
   NODEJS_VERSION: 16
 
 jobs:
