@@ -54,9 +54,9 @@ jobs:
           sed -n '/^v[0-9]\+\.[0-9]\+\.[0-9]\+\.windows\.[0-9]\+$/{s/^v//;s/\.windows\.1//;s/\.windows\.\(.*\)/(\1)/;p}' \
             >bundle-artifacts/display_version &&
           sed 's/(\(.*\))$/.\1/' <bundle-artifacts/display_version >bundle-artifacts/ver &&
-          echo "GIT_VERSION=$EXISTING_GIT_TAG" >> $GITHUB_ENV
-          echo "GIT_REV=$(git ls-remote https://github.com/$OWNER/$REPO \
-            refs/tags/$EXISTING_GIT_TAG | cut -f 1)" >>$GITHUB_ENV
+          echo "GIT_VERSION=$EXISTING_GIT_TAG" >> $GITHUB_ENV &&
+          git fetch --depth 1 --filter blob:none https://github.com/$OWNER/$REPO "refs/tags/$EXISTING_GIT_TAG:refs/tags/$EXISTING_GIT_TAG" &&
+          echo "GIT_REV=$(git rev-parse --verify "refs/tags/$EXISTING_GIT_TAG"^0)" >>$GITHUB_ENV
       - name: Get bundle-artifacts download URL
         uses: actions/github-script@v6
         if: env.TAG_GIT_WORKFLOW_RUN_ID != ''
@@ -80,8 +80,10 @@ jobs:
           curl -o bundle-artifacts.zip "${{steps.get-bundle-artifacts-url.outputs.download-url}}"
           unzip bundle-artifacts.zip -d bundle-artifacts
           echo "GIT_VERSION=$(cat bundle-artifacts/next_version)" >> $GITHUB_ENV
-          echo "GIT_REV=$(git ls-remote bundle-artifacts/git.bundle \
-            refs/tags/$(cat bundle-artifacts/next_version) | cut -f 1)" >>$GITHUB_ENV
+          sed '1,/^$/d' <bundle-artifacts/git.bundle |
+          { git unpack-objects -r 2>/dev/null || true; } &&
+          tag_oid="$(git ls-remote bundle-artifacts/git.bundle $(cat bundle-artifacts/next_version) | cut -f 1)" &&
+          echo "GIT_REV=$(git rev-parse --verify "$tag_oid"^0)" >>$GITHUB_ENV
       - name: Mirror Check Run to ${{ env.OWNER }}/${{ env.REPO }}
         uses: ./.github/actions/check-run-action
         with:
