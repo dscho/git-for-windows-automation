@@ -32,4 +32,4 @@ jobs:
       check-run-state: ${{steps.check-run-state.outputs.check-run-state}}
     steps:
       - name: clone git-for-windows-automation
-        uses: dscho/checkout@main
+        uses: actions/checkout@ef4381812d7f6ada8d30124c82c14899e3866feb
