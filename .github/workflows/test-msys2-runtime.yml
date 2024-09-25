@@ -66,6 +66,7 @@ jobs:
 
           curl -H "Authorization: token ${{secrets.GITHUB_TOKEN}}" \
               -fLo msys2-runtime.zip "$MSYS2_RUNTIME_ARTIFACT_URL" &&
+          ls -lart &&
           mkdir minimal-sdk &&
           cd minimal-sdk &&
           tar xzf ../git-sdk-x86_64-minimal.tar.gz &&
