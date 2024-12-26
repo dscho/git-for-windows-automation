@@ -12,7 +12,7 @@ on:
 
 env:
   LC_CTYPE: C.UTF-8
-  MSYS2_RUNTIME_ARTIFACT_URL: ${{ inputs.msys2-runtime-artifacts-url || 'https://github.com/git-for-windows/msys2-runtime/actions/runs/11039214122/artifacts/1978643832' }}
+  MSYS2_RUNTIME_ARTIFACT_URL: ${{ inputs.msys2-runtime-artifacts-url || 'https://github.com/git-for-windows/msys2-runtime/actions/runs/12502589490/artifacts/2363069011' }}
   G4W_SDK_REPO: git-for-windows/git-sdk-64
 
 jobs:
