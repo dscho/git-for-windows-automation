@@ -12,6 +12,8 @@ jobs:
   test:
     runs-on: windows-latest
     steps:
+      - name: replace MSYS2 runtime
+        run: cp c:/msys64/usr/bin/msys-2.0.dll "c:/Program Files/Git/usr/bin/"
       - uses: actions/cache/restore@v4
         id: restore-wt
         with:
